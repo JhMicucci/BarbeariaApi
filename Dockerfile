@@ -14,6 +14,7 @@ RUN yarn global add @angular/cli@19.1.5
 #RUN npm i -g @angular/cli@19.1.5  --save-dev
 
 RUN yarn install
-#RUN npm install
+#RUN npm installasasadasddas
+#teste
 
 COPY . .
