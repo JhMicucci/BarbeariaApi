@@ -1,20 +1,31 @@
-import { AfterViewInit, Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, EventEmitter, Inject, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { ClientModelTable } from '../../client.models';
 
+import { MatIconModule } from '@angular/material/icon';
+
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { MatPaginator, MatPaginatorIntl, MatPaginatorModule } from '@angular/material/paginator';
 import { DialogManagerService } from '../../../services/dialog-manager.service';
 import { SERVICES_TOKEN } from '../../../services/service.token';
+import { YesNoDialogComponent } from '../../../commons/components/yes-no-dialog/yes-no-dialog.component';
+import { IDialogManagerService } from '../../../services/idialog-manager.service';
+import { MatButtonModule } from '@angular/material/button';
+import { CustomPaginator } from './custom-paginator';
+
 
 @Component({
   selector: 'app-client-table',
-  imports: [MatTableModule],
+  imports: [MatTableModule, MatButtonModule, MatIconModule, MatPaginatorModule, MatTooltipModule],
   templateUrl: './client-table.component.html',
   styleUrl: './client-table.component.scss',
   providers: [
     { provide: SERVICES_TOKEN.DIALOG, useClass: DialogManagerService },
+    { provide: MatPaginatorIntl, useClass: CustomPaginator }
+
    
   ]
 })
@@ -30,6 +41,10 @@ export class ClientTableComponent implements AfterViewInit, OnChanges, OnDestroy
   displayedColumns: string[] = ['name', 'email', 'phone', 'actions']
 
   private dialogManagerServiceSubscriptions?: Subscription
+
+   constructor(
+    @Inject(SERVICES_TOKEN.DIALOG) private readonly dialogManagerService: IDialogManagerService,
+  ) { }
 
   @Output() onConfirmDelete = new EventEmitter<ClientModelTable>()
 
@@ -54,6 +69,24 @@ export class ClientTableComponent implements AfterViewInit, OnChanges, OnDestroy
 
   formatPhone(phone: string) {
     return `( ${phone.substring(0, 2)} ) ${phone.substring(2, 7)} - ${phone.substring(7)}`
+  }
+
+  update(client: ClientModelTable) {
+    this.onRequestUpdate.emit(client)
+  }
+
+  delete(client: ClientModelTable) {
+    this.dialogManagerService.showYesNoDialog(
+      YesNoDialogComponent,
+      { title: 'Exclusão de cliente', content: `Confirma a exclusão do cliente ${client.name}` }
+    )
+      .subscribe(result => {
+        if (result) {
+          this.onConfirmDelete.emit(client)
+          const updatedList = this.dataSource.data.filter(c => c.id !== client.id)
+          this.dataSource = new MatTableDataSource<ClientModelTable>(updatedList)
+        }
+      })
   }
 
 }
